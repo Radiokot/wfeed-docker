@@ -1,0 +1,79 @@
+version: '3.3'
+
+services:
+  db:
+    image: mysql:8.0.1
+    restart: always
+    command: --init-file /data/application/init.sql
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./db/db-init.sql:/data/application/init.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABSE: feed
+    healthcheck:
+      test: mysql --password=feed --user=feed -e "use feed;" && sleep 3
+      timeout: 5s
+      interval: 1s
+      retries: 10
+    logging:
+      driver: none
+
+  updater:
+    image: ghcr.io/radiokot/wfeed-updater:sha-740cce7
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./logging/updater.log4j.properties:/log4j.properties
+    env_file:
+      - ./keystore/updater-keystore.properties
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: feed
+      DB_PASSWORD: feed
+      DB_NAME: feed
+    logging:
+      driver: "json-file"
+      options:
+          max-file: "5"
+          max-size: "10m"
+
+  api:
+    image: ghcr.io/radiokot/wfeed-api:sha-cb91b76
+    restart: always
+    depends_on:
+      - updater
+    ports:
+      - 8041:8041
+    volumes:
+      - ./logging/api.log4j.properties:/log4j.properties
+    environment:
+      PORT: 8041
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: feed
+      DB_USER: feed
+      DB_PASSWORD: feed
+    logging:
+      driver: "json-file"
+      options:
+          max-file: "5"
+          max-size: "10m"
+
+  myadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - 8040:80
+    environment:
+      PMA_HOST: db
+    logging:
+      driver: none
+
+volumes:
+  dbdata:
