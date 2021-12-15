@@ -42,7 +42,7 @@ services:
           max-size: "10m"
 
   api:
-    image: ghcr.io/radiokot/wfeed-api:sha-cb91b76
+    image: ghcr.io/radiokot/wfeed-api:sha-7ad9be2
     restart: always
     depends_on:
       - updater
