@@ -17,10 +17,13 @@ services:
       interval: 1s
       retries: 10
     logging:
-      driver: none
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
 
   updater:
-    image: ghcr.io/radiokot/wfeed-updater:sha-740cce7
+    image: ghcr.io/radiokot/wfeed-updater:sha-db83bf1
     restart: always
     depends_on:
       db:
@@ -42,12 +45,12 @@ services:
           max-size: "10m"
 
   api:
-    image: ghcr.io/radiokot/wfeed-api:sha-7ad9be2
+    image: ghcr.io/radiokot/wfeed-api:feature-textless_vk_posts
     restart: always
     depends_on:
       - updater
     ports:
-      - 8041:8041
+      - 127.0.0.1:8041:8041
     volumes:
       - ./logging/api.log4j.properties:/log4j.properties
     environment:
@@ -69,7 +72,7 @@ services:
     depends_on:
       - db
     ports:
-      - 8040:80
+      - 127.0.0.1:8040:80
     environment:
       PMA_HOST: db
     logging:
